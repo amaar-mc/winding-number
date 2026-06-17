@@ -16,9 +16,47 @@ The **winding number** of a closed polygon around a point is the integer count o
 times the polygon winds around that point. A CCW polygon around an interior point has
 winding number +1; a CW polygon gives -1; an exterior point gives 0.
 
-This is the basis of the **nonzero rule**: a point is inside iff `winding_number != 0`. The
-nonzero rule works correctly for non-convex and self-intersecting polygons, unlike simple
-ray-casting (which can misclassify points in self-intersecting regions).
+This is the basis of the **nonzero rule**: a point is inside iff `winding_number != 0`.
+
+## Two fill rules
+
+This library implements both standard fill rules:
+
+**Nonzero rule** (`point_in_polygon`): inside iff `winding_number != 0`. Correct for
+non-convex and self-intersecting polygons; all regions with a non-zero winding count
+are considered inside.
+
+**Even-odd rule** (`point_in_polygon_even_odd`): inside iff `crossing_number` is odd.
+Counts how many times a ray from the point crosses the polygon boundary; an odd count
+means inside. The two rules agree for simple (non-self-intersecting) polygons and diverge
+for self-intersecting ones.
+
+### Pentagram example
+
+The canonical case where the rules disagree is a five-pointed star (pentagram) traced as
+the self-intersecting 5-vertex path (outer tips connected in skip-one order):
+
+```python
+import math
+from winding_number import winding_number, point_in_polygon, crossing_number, point_in_polygon_even_odd
+
+n = 5
+circle_pts = [
+    (math.cos(math.radians(90 - 72 * i)), math.sin(math.radians(90 - 72 * i)))
+    for i in range(n)
+]
+pentagram = [circle_pts[i % n] for i in [0, 2, 4, 1, 3]]
+
+center = (0.0, 0.0)
+
+winding_number(center, pentagram)               # -2  (wound twice, CW)
+point_in_polygon(center, pentagram)             # True   (nonzero rule: inside)
+crossing_number(center, pentagram)              # 2   (two crossings, even)
+point_in_polygon_even_odd(center, pentagram)    # False  (even-odd rule: outside)
+```
+
+The central region is wound around twice, so the nonzero rule treats it as inside.
+The even-odd rule ignores winding direction and depth: two crossings is even, so outside.
 
 ## Why zero-dependency vs. shapely or matplotlib?
 
@@ -46,7 +84,7 @@ pip install winding-number
 ## Quick start
 
 ```python
-from winding_number import winding_number, point_in_polygon, signed_area, orientation, is_convex
+from winding_number import winding_number, point_in_polygon, crossing_number, point_in_polygon_even_odd, signed_area, orientation, is_convex
 
 # CCW unit square.
 square = [(1, -1), (1, 1), (-1, 1), (-1, -1)]
@@ -73,6 +111,8 @@ point_in_polygon((1.5, 1.5), l_shape) # False (the notch)
 |---|---|
 | `winding_number(point, polygon)` | Signed winding number (Sunday's algorithm with isLeft) |
 | `point_in_polygon(point, polygon)` | True iff `winding_number != 0` (nonzero rule) |
+| `crossing_number(point, polygon)` | Number of rightward ray crossings (PNPOLY convention) |
+| `point_in_polygon_even_odd(point, polygon)` | True iff `crossing_number` is odd (even-odd rule) |
 | `signed_area(polygon)` | Shoelace formula; positive = CCW, negative = CW |
 | `orientation(polygon)` | "CCW" or "CW"; raises ValueError on degenerate zero-area polygon |
 | `is_convex(polygon)` | True iff all edge-pair cross products share the same sign |
@@ -82,9 +122,17 @@ All functions raise `ValueError` if the polygon has fewer than 3 vertices.
 
 ### On-edge convention
 
-A point exactly on a non-horizontal polygon edge is counted as **inside**
-(`winding_number` returns +/-1). A point on a horizontal edge is counted as **outside**
-(winding number 0). This is deterministic and requires no epsilon. See
+**Nonzero rule**: a point exactly on a non-horizontal polygon edge is counted as inside
+(`winding_number` returns +/-1). A point on a horizontal edge is counted as outside
+(winding number 0).
+
+**Even-odd rule**: the crossing test uses a strict `<` for the crossing x-coordinate,
+so a point that lies exactly on a non-horizontal edge (where the ray x-coordinate equals
+the crossing x) is counted as outside. Points on horizontal edges are outside (horizontal
+edges are skipped). The two algorithms may therefore disagree at exact boundary points;
+they agree at all strictly interior and strictly exterior points of simple polygons.
+
+Both conventions are deterministic and require no epsilon. See
 [docs/architecture.md](docs/architecture.md) for the full derivation.
 
 ## License
