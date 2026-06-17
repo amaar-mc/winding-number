@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "winding-number"
+version = "0.1.0"
+description = "Winding number and point-in-polygon for arbitrary (non-convex, self-intersecting) polygons, pure Python with zero dependencies."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Amaar Chughtai" }]
+keywords = [
+  "computational-geometry",
+  "point-in-polygon",
+  "winding-number",
+  "polygon",
+  "geometry",
+  "python",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: GIS",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "hypothesis>=6", "ruff>=0.4", "mypy>=1.10"]
+
+[project.urls]
+Homepage = "https://github.com/amaar-mc/winding-number"
+Repository = "https://github.com/amaar-mc/winding-number"
+Issues = "https://github.com/amaar-mc/winding-number/issues"
+Changelog = "https://github.com/amaar-mc/winding-number/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/winding_number"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+strict = true
+files = ["src"]
